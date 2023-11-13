@@ -16,29 +16,34 @@ $(document).ready(function() {
        displayError();
      }
     else {
-       // console.log(searchData);
-       // $.get("https://www.googleapis.com/books/v1/volumes?q="+searchData, getBookData()});
-       $.ajax({
-          url: bookUrl + searchData,
-          dataType: "json",
-          success: function(response) {
-            console.log(response)
-            if (response.totalItems === 0) {
-              alert("no result!.. try again")
-            }
-            else {
-              $("#title").animate({'margin-top': '5px'}, 1000); //search box animation
-              $(".book-list").css("visibility", "visible");
-              displayResults(response);
-            }
-          },
-          error: function () {
-            alert("Something went wrong.. <br>"+"Try again!");
-          }
-        });
-      }
-      $("#search-box").val(""); //clearn search box
+		// check if the input is ISBN
+		  if (/^\d{10}|\d{13}$/.test(searchData)) {
+			// search by ISBN
+			console.log("Its a isbn number");
+			bookUrl = "https://www.googleapis.com/books/v1/volumes?q=isbn:"; // update the API endpoint
+		  }
+
+		  $.ajax({
+			url: bookUrl + searchData,
+			dataType: "json",
+			success: function(response) {
+			  if (response.totalItems === 0) {
+				alert("no result!.. try again");
+			  } else {
+				$("#title").animate({ 'margin-top': '5px' }, 1000);
+				$(".book-list").css("visibility", "visible");
+				displayResults(response);
+			  }
+			},
+			error: function() {
+			  alert("Something went wrong.. <br>" + "Try again!");
+			}
+		  });
+	  }
+	  bookUrl = "https://www.googleapis.com/books/v1/volumes?q=";
+      $("#search-box").val(""); //clean search box
    });
+
 
    /*
    * function to display result in index.html
@@ -46,6 +51,12 @@ $(document).ready(function() {
    */
    function displayResults(response) {
       for (var i = 0; i < response.items.length; i+=2) {
+		  item = response.items[i].volumeInfo;
+		if (!item) {
+		  // Handle the case where volumeInfo is undefined
+		  console.error("VolumeInfo is undefined for item", item);
+		  continue;
+		}
         item = response.items[i];
         title1 = item.volumeInfo.title;
         author1 = item.volumeInfo.authors;
@@ -53,19 +64,20 @@ $(document).ready(function() {
         bookLink1 = item.volumeInfo.previewLink;
         bookIsbn = item.volumeInfo.industryIdentifiers[1].identifier
         bookImg1 = (item.volumeInfo.imageLinks) ? item.volumeInfo.imageLinks.thumbnail : placeHldr ;
-
+		
         item2 = response.items[i+1];
+		if(item2){
         title2 = item2.volumeInfo.title;
         author2 = item2.volumeInfo.authors;
         publisher2 = item2.volumeInfo.publisher;
         bookLink2 = item2.volumeInfo.previewLink;
         bookIsbn2 = item2.volumeInfo.industryIdentifiers[1].identifier
         bookImg2 = (item2.volumeInfo.imageLinks) ? item2.volumeInfo.imageLinks.thumbnail : placeHldr ;
-
+		}
         // in production code, item.text should have the HTML entities escaped.
         outputList.innerHTML += '<div class="row mt-4">' +
                                 formatOutput(bookImg1, title1, author1, publisher1, bookLink1, bookIsbn) +
-                                formatOutput(bookImg2, title2, author2, publisher2, bookLink2, bookIsbn2) +
+                                //formatOutput(bookImg2, title2, author2, publisher2, bookLink2, bookIsbn2) +
                                 '</div>';
 
         console.log(outputList);
